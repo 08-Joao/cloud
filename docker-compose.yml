@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  pickbox_backend:
+    container_name: pickbox_backend
+    image: ${DOCKER_USER}/pickbox-backend:latest
+    build:
+      context: ./pickbox-core
+      dockerfile: Dockerfile
+    ports:
+      - "4002:4002"
+    environment:
+      - NODE_ENV=production
+      - PORT=4002
+      - DATABASE_URL=${DATABASE_URL}
+    volumes:
+      - pickbox_uploads:/app/uploads
+    restart: always
+    networks:
+      - pickbox_network
+
+  pickbox_frontend:
+    container_name: pickbox_frontend
+    image: ${DOCKER_USER}/pickbox-frontend:latest
+    build:
+      context: ./pickbox-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+      - NEXT_PUBLIC_API_URL=http://pickbox_backend:4002
+    depends_on:
+      - pickbox_backend
+    restart: always
+    networks:
+      - pickbox_network
+
+volumes:
+  pickbox_uploads:
+    driver: local
+
+networks:
+  pickbox_network:
+    driver: bridge
