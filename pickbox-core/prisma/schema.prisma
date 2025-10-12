@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String       @id @default(uuid())
+  name            String
+  email           String       @unique
+  password        String
+  generalFolderId String?      @unique
+  userFolders     UserFolder[]
+  ownedFiles      File[]
+  sharedFiles     FileShare[] // Arquivos compartilhados com este usuário
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model UserFolder {
+  id        Int        @id @default(autoincrement())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userRole  FolderRole
+  folderId  String
+  folder    Folder     @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([userId, folderId])
+  @@index([userId])
+  @@index([folderId])
+}
+
+model Folder {
+  id          String       @id @default(uuid())
+  name        String
+  parentId    String?
+  parent      Folder?      @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  subfolders  Folder[]     @relation("FolderHierarchy")
+  files       File[]
+  userFolders UserFolder[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([parentId])
+}
+
+model File {
+  id           String  @id @default(uuid())
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  path         String
+  isPublic     Boolean @default(false)
+  ownerId      String
+  owner        User    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  folderId     String
+  folder       Folder  @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
+  // Compartilhamento organizacional
+  organizationDomain String? // ex: "esfsef.com.br"
+  organizationRole   FileRole? // Permissão para toda organização
+
+  // Compartilhamento individual
+  shares FileShare[] // Compartilhamentos específicos
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([folderId])
+  @@index([ownerId])
+  @@index([isPublic])
+  @@index([organizationDomain]) // Para buscar arquivos da organização
+}
+
+// Compartilhamento individual de arquivos
+model FileShare {
+  id        String   @id @default(uuid())
+  fileId    String
+  file      File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      FileRole
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([fileId, userId]) // Um usuário não pode ter múltiplos compartilhamentos do mesmo arquivo
+  @@index([userId])
+  @@index([fileId])
+}
+
+enum FolderRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+enum FileRole {
+  EDITOR
+  VIEWER
+}
