@@ -3,7 +3,6 @@
 import { GetUserDto } from "@/lib/types";
 import { Button } from "../ui/button";
 import { LogOut, Plus, Upload } from "lucide-react";
-import Link from "next/link";
 import { ThemeToggle } from "../shared/ThemeToggle";
 import {
   DropdownMenu,
@@ -14,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "../ui/avatar";
+import { useSignOut } from "@/lib/hooks/use-auth";
 
 interface DashboardHeaderProps {
     user: GetUserDto;
@@ -22,6 +22,7 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ user, onUploadClick, onCreateFolderClick }: DashboardHeaderProps) {
+    const { mutate: signOut, isPending } = useSignOut();
 
     const getInitials = (name: string) => {
         const names = name.split(' ');
@@ -29,6 +30,10 @@ export function DashboardHeader({ user, onUploadClick, onCreateFolderClick }: Da
             return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
         }
         return name.substring(0, 2).toUpperCase();
+    }
+
+    const handleSignOut = () => {
+        signOut();
     }
 
     return (
@@ -58,11 +63,9 @@ export function DashboardHeader({ user, onUploadClick, onCreateFolderClick }: Da
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem asChild>
-                                <Link href="/signout">
-                                    <LogOut className="mr-2 h-4 w-4" />
-                                    <span>Sair</span>
-                                </Link>
+                            <DropdownMenuItem onClick={handleSignOut} disabled={isPending}>
+                                <LogOut className="mr-2 h-4 w-4" />
+                                <span>{isPending ? 'Saindo...' : 'Sair'}</span>
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>

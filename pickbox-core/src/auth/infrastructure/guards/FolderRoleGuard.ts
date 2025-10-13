@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { FolderRole } from 'generated/prisma';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 export interface RequiredFolderRoles {
   folderRole?: FolderRole | FolderRole[];
@@ -27,31 +28,28 @@ export class FolderRoleGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     
-    // Primeiro verifica se está autenticado
-    const accessToken = request.cookies['accessToken'];
-    if (!accessToken) {
-      throw new UnauthorizedException('No access token provided');
+    // Primeiro verifica se está autenticado usando JwtAuthGuard
+    const jwtGuard = new JwtAuthGuard(this.jwtService);
+    const isAuthenticated = await jwtGuard.canActivate(context);
+    
+    if (!isAuthenticated) {
+      return false;
     }
 
-    let decodedToken;
-    try {
-      decodedToken = this.jwtService.verify(accessToken, { secret: process.env.JWT_SECRET });
-      request.userId = decodedToken.id;
-    } catch (e) {
-      throw new UnauthorizedException('Invalid access token');
-    }
+    // Pega o userId do request (já foi adicionado pelo JwtAuthGuard)
+    const userId = request.userId;
 
     // Pega as roles necessárias do decorator
     const requiredRoles = this.reflector.get<RequiredFolderRoles>('folderRoles', context.getHandler());
     
-    // Se não há roles definidas, permite acesso
+    // Se não há roles definidas, permite acesso (apenas autenticação é necessária)
     if (!requiredRoles) {
       return true;
     }
 
     // Busca o usuário completo no banco
     const user = await this.prismaService.user.findUnique({
-      where: { id: decodedToken.id },
+      where: { id: userId },
       include: {
         userFolders: {
           include: {

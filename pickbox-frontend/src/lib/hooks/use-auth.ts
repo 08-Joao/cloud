@@ -41,6 +41,7 @@ export const useSignIn = () => {
             router.push('/dashboard');
         },
         onError: (error: any) => {
+            // O backend já limpa o cookie automaticamente quando o token é inválido
             toast.error(error.response?.data?.message || 'Falha no login. Verifique suas credenciais.');
         },
     });
