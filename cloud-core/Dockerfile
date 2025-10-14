@@ -46,8 +46,20 @@ COPY --from=builder /app/generated ./generated
 # Create uploads directory
 RUN mkdir -p /app/uploads
 
+# Create entrypoint script
+RUN echo '#!/bin/sh' > /app/docker-entrypoint.sh && \
+    echo 'set -e' >> /app/docker-entrypoint.sh && \
+    echo 'echo "Running Prisma migrations..."' >> /app/docker-entrypoint.sh && \
+    echo 'npx prisma migrate deploy' >> /app/docker-entrypoint.sh && \
+    echo 'echo "Starting application..."' >> /app/docker-entrypoint.sh && \
+    echo 'exec "$@"' >> /app/docker-entrypoint.sh && \
+    chmod +x /app/docker-entrypoint.sh
+
 # Expose port
 EXPOSE 4002
+
+# Set entrypoint
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 
 # Start the application
 CMD ["pnpm", "run", "start:prod"]
