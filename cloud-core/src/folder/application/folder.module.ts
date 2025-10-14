@@ -1,4 +1,4 @@
-import { UserFolderRepository } from './../infrastructure/repositories/user-folder.repository';
+import { UserFolderRepository } from '../infrastructure/repositories/user-folder.repository';
 import { forwardRef, Module } from '@nestjs/common';
 import { FolderService } from './services/folder.service';
 import { FolderController } from '../infrastructure/controllers/folder.controller';

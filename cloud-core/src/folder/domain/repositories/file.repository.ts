@@ -1,5 +1,5 @@
 import { UpdateFileDto } from "src/folder/dtos/update.file.dto";
-import { FileEntity } from "../../../folder/domain/entities/file.entity";
+import { FileEntity } from "../entities/file.entity";
 import { CreateFileDto } from "src/folder/dtos/create.file.dto";
 
 export interface IFileRepository {

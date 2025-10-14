@@ -1,8 +1,12 @@
 import axios from "axios";
 
+const baseURL =
+    typeof window !== 'undefined' && window.location.hostname.endsWith('tehkly.com')
+        ? 'https://api-cloud.tehkly.com/api'
+        : 'http://localhost:4002/api';
+
 const backendRoute = axios.create({
-    // baseURL: "http://localhost:4002/api",
-    baseURL: "https://api-cloud.tehkly.com/api", // productor
+    baseURL,
     withCredentials: true
 })
 

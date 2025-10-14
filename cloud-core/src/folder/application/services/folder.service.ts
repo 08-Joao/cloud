@@ -1,5 +1,5 @@
-import { UserFolderRepository } from './../../infrastructure/repositories/user-folder.repository';
-import { FolderRepository } from './../../infrastructure/repositories/folder.repository';
+import { UserFolderRepository } from '../../infrastructure/repositories/user-folder.repository';
+import { FolderRepository } from '../../infrastructure/repositories/folder.repository';
 import {
   Injectable,
   Inject,
