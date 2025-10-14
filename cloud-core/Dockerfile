@@ -16,7 +16,7 @@ RUN pnpm install --frozen-lockfile
 COPY prisma ./prisma/
 
 # Generate Prisma Client
-RUN pnpm exec prisma generate
+RUN npx prisma generate
 
 # Copy source code
 COPY . .
