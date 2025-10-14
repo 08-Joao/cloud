@@ -1,6 +1,26 @@
 version: '3.8'
 
 services:
+  cloud_postgres:
+    container_name: cloud_postgres
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-cloud_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-cloud_password}
+      - POSTGRES_DB=${POSTGRES_DB:-cloud_db}
+    volumes:
+      - cloud_postgres_data:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - cloud_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cloud_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   cloud_backend:
     container_name: cloud_backend
     image: ${DOCKER_USER}/cloud-backend:latest
@@ -13,8 +33,13 @@ services:
       - NODE_ENV=production
       - PORT=4002
       - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
     volumes:
       - cloud_uploads:/app/uploads
+    depends_on:
+      cloud_postgres:
+        condition: service_healthy
     restart: always
     networks:
       - cloud_network
@@ -40,6 +65,8 @@ services:
       - proxy_network
 
 volumes:
+  cloud_postgres_data:
+    driver: local
   cloud_uploads:
     driver: local
 
