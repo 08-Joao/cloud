@@ -8,67 +8,134 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Usuário - sincronizado com auth.tehkly.com
 model User {
-  id              String       @id @default(uuid())
-  name            String
-  email           String       @unique
-  password        String
-  generalFolderId String?      @unique
-  userFolders     UserFolder[]
-  ownedFiles      File[]
-  sharedFiles     FileShare[] // Arquivos compartilhados com este usuário
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id    String @id // Mesmo ID do sistema de auth
+  email String @unique
+  name  String
+
+  // Quota e uso
+  storageQuota Int @default(0) // 5GB em bytes
+  storageUsed  Int @default(0)
+
+  // Pasta raiz do usuário
+  rootFolderId String? @unique
+  rootFolder   Folder? @relation("UserRootFolder", fields: [rootFolderId], references: [id], onDelete: SetNull)
+
+  // Relações
+  ownedFolders Folder[]      @relation("FolderOwner")
+  ownedFiles   File[]        @relation("FileOwner")
+  folderShares FolderShare[]
+  fileShares   FileShare[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
 }
 
-model UserFolder {
-  id        Int        @id @default(autoincrement())
-  userId    String
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userRole  FolderRole
-  folderId  String
-  folder    Folder     @relation(fields: [folderId], references: [id], onDelete: Cascade)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-
-  @@unique([userId, folderId])
-  @@index([userId])
-  @@index([folderId])
-}
-
+// Pasta
 model Folder {
-  id          String       @id @default(uuid())
-  name        String
-  parentId    String?
-  parent      Folder?      @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
-  subfolders  Folder[]     @relation("FolderHierarchy")
-  files       File[]
-  userFolders UserFolder[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id   String @id @default(uuid())
+  name String
+
+  // Hierarquia
+  parentId   String?
+  parent     Folder?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  subfolders Folder[] @relation("FolderHierarchy")
+
+  // Proprietário
+  ownerId String
+  owner   User   @relation("FolderOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  // Usuário que tem essa como pasta raiz (1:1)
+  rootOwner User? @relation("UserRootFolder")
+
+  // Arquivos dentro desta pasta
+  files File[]
+
+  // Compartilhamento
+  shares FolderShare[]
+
+  // Visibilidade
+  isPublic Boolean @default(false)
+
+  // Metadados
+  color       String? // Para personalização visual
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([parentId])
+  @@index([ownerId])
+  @@index([isPublic])
 }
 
-model File {
-  id           String  @id @default(uuid())
-  filename     String
-  originalName String
-  mimeType     String
-  size         Int
-  path         String
-  isPublic     Boolean @default(false)
-  ownerId      String
-  owner        User    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  folderId     String
-  folder       Folder  @relation(fields: [folderId], references: [id], onDelete: Cascade)
+// Compartilhamento de pastas
+model FolderShare {
+  id String @id @default(uuid())
+
+  folderId String
+  folder   Folder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  role FolderRole
 
   // Compartilhamento organizacional
-  organizationDomain String? // ex: "esfsef.com.br"
-  organizationRole   FileRole? // Permissão para toda organização
+  organizationDomain String? // ex: "esfsef.com.br" - todos do domínio têm acesso
 
-  // Compartilhamento individual
-  shares FileShare[] // Compartilhamentos específicos
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([folderId, userId])
+  @@index([userId])
+  @@index([folderId])
+  @@index([organizationDomain])
+}
+
+// Arquivo
+model File {
+  id String @id @default(uuid())
+
+  // Nome e metadados básicos
+  name         String // Nome exibido
+  originalName String // Nome original do upload
+
+  // Armazenamento (MinIO/R2)
+  storageKey String @unique // Chave no bucket (ex: "users/uuid/filename")
+  bucketName String // Nome do bucket
+
+  // Tipo e tamanho
+  mimeType String
+  size     Int // Tamanho em bytes
+
+  // Localização
+  folderId String
+  folder   Folder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
+  // Proprietário
+  ownerId String
+  owner   User   @relation("FileOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  // Compartilhamento
+  shares   FileShare[]
+  isPublic Boolean     @default(false)
+
+  // Link público (se isPublic = true)
+  publicSlug String? @unique // ex: "abc123" -> cloud.tehkly.com/p/abc123
+
+  // Metadados extras
+  description String?
+  tags        String[] // Array de tags para busca
+
+  // Versionamento (opcional para futuro)
+  version Int @default(1)
+
+  // Hash para deduplicação (opcional)
+  contentHash String? // SHA256 do arquivo
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -76,23 +143,60 @@ model File {
   @@index([folderId])
   @@index([ownerId])
   @@index([isPublic])
-  @@index([organizationDomain]) // Para buscar arquivos da organização
+  @@index([publicSlug])
+  @@index([contentHash]) // Para deduplicação
+  @@index([storageKey])
 }
 
-// Compartilhamento individual de arquivos
+// Compartilhamento de arquivos
 model FileShare {
-  id        String   @id @default(uuid())
-  fileId    String
-  file      File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role      FileRole
+  id String @id @default(uuid())
+
+  fileId String
+  file   File   @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  role FileRole
+
+  // Compartilhamento organizacional
+  organizationDomain String? // Todos do domínio têm acesso
+
+  // Link de compartilhamento com senha (opcional)
+  shareToken    String?   @unique // Token único para compartilhar via link
+  sharePassword String? // Hash da senha (se protegido)
+  expiresAt     DateTime? // Data de expiração
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([fileId, userId]) // Um usuário não pode ter múltiplos compartilhamentos do mesmo arquivo
+  @@unique([fileId, userId])
   @@index([userId])
   @@index([fileId])
+  @@index([shareToken])
+  @@index([organizationDomain])
+}
+
+// Log de atividades (opcional mas recomendado)
+model ActivityLog {
+  id String @id @default(uuid())
+
+  userId     String
+  action     ActivityAction
+  entityType EntityType
+  entityId   String
+  entityName String // Nome do arquivo/pasta para exibição
+
+  // Metadados extras
+  ipAddress String?
+  userAgent String?
+  metadata  Json? // Dados extras específicos da ação
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
 }
 
 enum FolderRole {
@@ -104,4 +208,22 @@ enum FolderRole {
 enum FileRole {
   EDITOR
   VIEWER
+}
+
+enum ActivityAction {
+  FILE_UPLOAD
+  FILE_DOWNLOAD
+  FILE_DELETE
+  FILE_RENAME
+  FILE_MOVE
+  FILE_SHARE
+  FOLDER_CREATE
+  FOLDER_DELETE
+  FOLDER_RENAME
+  FOLDER_SHARE
+}
+
+enum EntityType {
+  FILE
+  FOLDER
 }

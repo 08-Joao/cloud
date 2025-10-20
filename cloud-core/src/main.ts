@@ -22,7 +22,6 @@ async function bootstrap() {
   );
 
   app.use(cookieParser());
-  app.setGlobalPrefix('api');
   app.enableCors({
     origin: ['http://localhost:3002', 'https://cloud.tehkly.com'],
     credentials: true,

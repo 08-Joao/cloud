@@ -1,17 +1,19 @@
-import { forwardRef, Module } from '@nestjs/common';
-import { UserService } from './services/user.service';
+import { Module } from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios';
 import { UserController } from '../infrastructure/controllers/user.controller';
+import { UserService } from './services/user.service';
 import { PrismaModule } from 'src/prisma/prisma.module';
-import { UserRepository } from '../infrastructure/repositories/user.repository';
-import { FolderModule } from 'src/folder/application/folder.module';
 
 @Module({
   imports: [
-    PrismaModule, 
-    forwardRef(() => FolderModule) 
+    PrismaModule,
+    HttpModule.register({
+      timeout: 5000,
+      maxRedirects: 3,
+    }),
   ],
-  providers: [UserService, UserRepository],
   controllers: [UserController],
+  providers: [UserService],
   exports: [UserService],
 })
 export class UserModule {}

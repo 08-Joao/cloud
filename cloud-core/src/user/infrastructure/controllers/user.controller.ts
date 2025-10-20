@@ -1,13 +1,33 @@
-import { Controller, Patch } from '@nestjs/common';
-import { UserId } from 'src/common/decorators';
-import { UserService } from 'src/user/application/services/user.service';
-import { UpdateUserDto } from 'src/user/dtos/update.user.dto';
 
+import { Controller, Get, NotFoundException, UseGuards } from '@nestjs/common';
+import { CreateUserDto } from '../../dto/create-user.dto';
+import { UpdateUserDto } from '../../dto/update-user.dto';
+import { UserService } from 'src/user/application/services/user.service';
+import { CurrentUser } from 'src/auth/infrastructure/decorators/current-user.decorator';
+import { GetGlobalUserDto } from 'src/auth/dtos/get-global-user.dto';
+import { AuthGuard } from 'src/auth/infrastructure/guards/auth.guard';
+
+@UseGuards(AuthGuard)
 @Controller('user')
 export class UserController {
-    constructor (private userService: UserService) {}
-    @Patch('')
-    update(@UserId() userId: string, data: UpdateUserDto){
-        return this.userService.update(userId, data);
+  constructor(private readonly userService: UserService) {}
+
+  @Get('/me')
+  async getMe(@CurrentUser() user: GetGlobalUserDto) {
+    return user;
+  }
+
+  @Get('storage')
+  async getStorage(@CurrentUser() user: GetGlobalUserDto) {
+    const localUser = await this.userService.findById(user.id);
+
+    if (!localUser) {
+      throw new NotFoundException('User not found');
     }
+
+    return {
+      used: localUser.storageUsed,
+      quota: localUser.storageQuota,
+    }
+  }
 }

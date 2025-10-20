@@ -1,19 +1,18 @@
 import { Module } from '@nestjs/common';
-import { AuthService } from './services/auth.service';
-import { AuthController } from '../infrastructure/controllers/auth.controller';
 import { UserModule } from 'src/user/application/user.module';
-import { JwtModule } from '@nestjs/jwt';
-import { JwtAuthGuard } from '../infrastructure/guards/jwt-auth.guard';
-import { PrismaModule } from 'src/prisma/prisma.module';
+import { AuthGuard } from '../infrastructure/guards/auth.guard';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
-  imports: [PrismaModule, UserModule, JwtModule.register({
-    global: true,
-    secret: process.env.JWT_SECRET,
-    signOptions: { expiresIn: process.env.JWT_EXPIRES_IN },
-  })],
-  providers: [AuthService, JwtAuthGuard],
-  controllers: [AuthController],
-  exports: [JwtAuthGuard, JwtModule]
+  imports: [
+    HttpModule.register({
+      timeout: 5000,
+      maxRedirects: 3,
+    }),
+    UserModule, 
+  ],
+  providers: [AuthGuard],
+  exports: [AuthGuard],
 })
+
 export class AuthModule {}
