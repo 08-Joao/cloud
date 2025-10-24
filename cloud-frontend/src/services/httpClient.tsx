@@ -25,11 +25,13 @@ const authRoute = axios.create({
 backendRoute.interceptors.response.use(
     (response) => response,
     (error) => {
-        // Se receber 401 e não estiver na página de login, redireciona
         if (error.response?.status === 401 && typeof window !== 'undefined') {
             const currentPath = window.location.pathname;
             if (!currentPath.startsWith('/signin') && !currentPath.startsWith('/signup')) {
-                window.location.href = '/signin';
+                const authBase = window.location.hostname.endsWith('tehkly.com') 
+                    ? 'https://auth.tehkly.com' 
+                    : 'http://localhost:3004';
+                window.location.href = `${authBase}/signin?redirect=${encodeURIComponent(window.location.href)}`;
             }
         }
         return Promise.reject(error);
