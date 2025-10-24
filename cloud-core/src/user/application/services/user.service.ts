@@ -50,7 +50,7 @@ export class UserService {
         // Passo 2: Cria a pasta raiz
         const rootFolder = await tx.folder.create({
           data: {
-            name: 'Meus Arquivos',
+            name: 'My files',
             ownerId: newUser.id,
           },
         });

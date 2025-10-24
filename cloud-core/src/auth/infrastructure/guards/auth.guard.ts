@@ -6,10 +6,9 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { Request } from 'express';
+import { FastifyRequest } from 'fastify';
 import { firstValueFrom } from 'rxjs';
 import { UserService } from 'src/user/application/services/user.service';
-
 
 interface AuthResponse {
   valid: boolean;
@@ -24,20 +23,23 @@ interface AuthResponse {
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-
   constructor(
     private httpService: HttpService,
     private userService: UserService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<Request>();
-    
-    const cookieHeader = request.headers.cookie;
+    const request = context.switchToHttp().getRequest<FastifyRequest>();
 
-    if (!cookieHeader || !cookieHeader.includes('accessToken')) {
+    // Pega o cookie accessToken (httpOnly, domain .tehkly.com)
+    const accessToken = request.cookies?.accessToken;
+
+    if (!accessToken) {
       throw new UnauthorizedException('Token não fornecido');
     }
+
+    // Monta o header de cookie para enviar ao serviço de auth
+    const cookieHeader = `accessToken=${accessToken}`;
 
     try {
 

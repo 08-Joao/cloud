@@ -1,18 +1,16 @@
 @import "tailwindcss";
-@import "tw-animate-css";
+/* @import "tw-animate-css"; */
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  /* Cores Base */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-elevation-1: var(--elevation-1);
   --color-elevation-2: var(--elevation-2);
   --color-text: var(--text);
   --color-text-inverted: var(--text-inverted);
-
-  /* Cores da Marca e Acento */
+  
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
@@ -22,7 +20,6 @@
   --color-tertiary: var(--tertiary);
   --color-tertiary-foreground: var(--tertiary-foreground);
 
-  /* Cores Semânticas de Estado */
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-error: var(--error);
@@ -32,7 +29,6 @@
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
 
-  /* Componentes */
   --color-card: var(--elevation-1);
   --color-card-foreground: var(--foreground);
   --color-popover: var(--elevation-2);
@@ -46,7 +42,6 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* Sidebar */
   --color-sidebar: var(--elevation-1);
   --color-sidebar-foreground: var(--foreground);
   --color-sidebar-primary: var(--primary);
@@ -56,18 +51,15 @@
   --color-sidebar-border: var(--border);
   --color-sidebar-ring: var(--ring);
 
-  /* Gráficos */
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
-  /* Fontes */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  /* Raio */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -75,201 +67,165 @@
 }
 
 :root {
-  --radius: 0.625rem;
-
-  /* Font */
+  --radius: 0.75rem;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
 }
 
-/* Dark theme styles when .dark class is present */
-.dark {
-  /* Dark Theme - Paleta Azul-Roxo-Rosa Moderna */
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --elevation-1: #1e293b;
-  --elevation-2: #334155;
-  --text-primary: #cbd5e1;
 
-  /* Cores principais - Gradiente mais vibrante no dark */
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-
-  --tertiary: #475569;
-  --tertiary-foreground: #cbd5e1;
-
-  /* Estados semânticos */
-  --success: #22c55e;
-  --success-foreground: #ffffff;
-
-  --error: #dc2626;
-  --error-foreground: #ffffff;
-
-  --warning: #fbbf24;
-  --warning-foreground: #000000;
-
-  --info: #60a5fa;
-  --info-foreground: #ffffff;
-
-  /* Bordas e inputs mais sutis */
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-
-  /* Support - Para compatibilidade */
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-
-  /* Texts - Para compatibilidade */
-  --text: #f8fafc;
-  --text-inverted: #0f172a;
-
-  /* Componentes adicionais */
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-
-  /* Charts - Paleta vibrante para dark mode */
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-
-  /* Sidebar */
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-}
-
-/* Light theme explicit class */
+/* Tema LIGHT */
 .light {
   --background: #ffffff;
-  --foreground: #1e293b;
+  --foreground: #1a1a1a;
 
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-
-  --border: #e2e8f0;
-
-  --accent: #8b5cf6;
-  --accent-foreground: #ffffff;
-
-  --text: #1e293b;
+  /* Cores de destaque e texto */
+  --text: #4a4a4a;
   --text-inverted: #ffffff;
 
-  --elevation-1: #fefefe;
-  --elevation-2: #f8fafc;
+  /* Camadas visuais */
+  --elevation-1: #f6f6f6;
+  --elevation-2: #ededed;
 
-  --card: #ffffff;
-  --card-foreground: #1e293b;
-
-  --popover: #ffffff;
-  --popover-foreground: #1e293b;
-
-  --primary: #2563eb;
+  /* Cores principais */
+  --primary: #69b3fd; /* Azul vibrante */
   --primary-foreground: #ffffff;
 
-  --secondary: #f1f5f9;
-  --secondary-foreground: #1e293b;
+  --secondary: #26A69A; /* Teal vibrante */
+  --secondary-foreground: #1a1a1a;
 
-  --error: #dc2626;
+  /* Acentos sutis derivados */
+  --accent: #56ffbe; /* Roxo vibrante */
+  --accent-foreground: #ffffff;
 
-  --input: #f1f5f9;
-  --ring: #3b82f6;
+  /* Estados */
+  --success: #388E3C; /* Verde escuro */
+  --success-foreground: #ffffff;
 
-  --chart-1: #3b82f6;
-  --chart-2: #8b5cf6;
-  --chart-3: #ec4899;
-  --chart-4: #06b6d4;
-  --chart-5: #a855f7;
+  --error: #D81B60; /* Rosa magenta */
+  --error-foreground: #ffffff;
 
+  --warning: #512DA8; /* Roxo escuro */
+  --warning-foreground: #ffffff;
+
+  --info: #0288D1; /* Azul claro */
+  --info-foreground: #ffffff;
+
+  /* Bordas, inputs, anéis */
+  --border: #d1d1d1;
+  --input: #e8e8e8;
+  --ring: #1976D2;
+
+  /* Complementares */
+  --muted: #e0e0e0;
+  --muted-foreground: #4a4a4a;
+
+  /* Componentes */
+  --card: #ffffff;
+  --card-foreground: #1a1a1a;
+  --popover: #ffffff;
+  --popover-foreground: #1a1a1a;
+  --destructive: #D81B60;
+  --destructive-foreground: #ffffff;
+
+  /* Sidebar */
   --sidebar: #ffffff;
-  --sidebar-foreground: #1e293b;
-  --sidebar-primary: #2563eb;
+  --sidebar-foreground: #4a4a4a;
+  --sidebar-primary: #1976D2;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f1f5f9;
-  --sidebar-accent-foreground: #1e293b;
-  --sidebar-border: #e2e8f0;
-  --sidebar-ring: #3b82f6;
+  --sidebar-accent: #26A69A;
+  --sidebar-accent-foreground: #1a1a1a;
+  --sidebar-border: #d1d1d1;
+  --sidebar-ring: #1976D2;
+
+  /* Charts (tons derivados da paleta) */
+  --chart-1: #1976D2; /* Azul vibrante */
+  --chart-2: #26A69A; /* Teal vibrante */
+  --chart-3: #7B1FA2; /* Roxo vibrante */
+  --chart-4: #388E3C; /* Verde escuro */
+  --chart-5: #0288D1; /* Azul claro */
 }
 
-/* Dark theme styles when system prefers dark (and no manual override) */
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) {
-    --background: #0f172a;
-    --foreground: #f8fafc;
+/* Tema DARK - versão inversa do light */
+.dark {
+  --background: #1a1a1a;
+  --foreground: #ffffff;
 
-    --muted: #334155;
-    --muted-foreground: #94a3b8;
+  /* Cores de destaque e texto */
+  --text: #b0b0b0;
+  --text-inverted: #1a1a1a;
 
-    --border: #334155;
+  /* Camadas visuais - tons escuros */
+  --elevation-1: #252525;
+  --elevation-2: #303030;
 
-    --accent: #a855f7;
-    --accent-foreground: #ffffff;
+  /* Cores principais */
+  --primary: #69b3fd; /* Azul vibrante */
+  --primary-foreground: #ffffff;
 
-    --text: #f8fafc;
-    --text-inverted: #0f172a;
+  --secondary: #1cd4c2; /* Teal vibrante */
+  --secondary-foreground: #1a1a1a;
 
-    --elevation-1: #1e293b;
-    --elevation-2: #334155;
-  }
+  /* Acentos sutis derivados */
+  --accent: #56ffbe; /* Roxo vibrante */
+  --accent-foreground: #ffffff;
+
+  /* Estados */
+  --success: #388E3C; /* Verde escuro */
+  --success-foreground: #ffffff;
+
+  --error: #D81B60; /* Rosa magenta */
+  --error-foreground: #ffffff;
+
+  --warning: #512DA8; /* Roxo escuro */
+  --warning-foreground: #ffffff;
+
+  --info: #0288D1; /* Azul claro */
+  --info-foreground: #ffffff;
+
+  /* Bordas, inputs, anéis */
+  --border: #3a3a3a;
+  --input: #2a2a2a;
+  --ring: #1976D2;
+
+  /* Complementares */
+  --muted: #2a2a2a;
+  --muted-foreground: #b0b0b0;
+
+  /* Componentes */
+  --card: #252525;
+  --card-foreground: #ffffff;
+  --popover: #252525;
+  --popover-foreground: #ffffff;
+  --destructive: #D81B60;
+  --destructive-foreground: #ffffff;
+
+  /* Sidebar */
+  --sidebar: #252525;
+  --sidebar-foreground: #b0b0b0;
+  --sidebar-primary: #1976D2;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #26A69A;
+  --sidebar-accent-foreground: #1a1a1a;
+  --sidebar-border: #3a3a3a;
+  --sidebar-ring: #1976D2;
+
+  /* Charts (tons derivados da paleta) */
+  --chart-1: #1976D2; /* Azul vibrante */
+  --chart-2: #26A69A; /* Teal vibrante */
+  --chart-3: #7B1FA2; /* Roxo vibrante */
+  --chart-4: #388E3C; /* Verde escuro */
+  --chart-5: #0288D1; /* Azul claro */
 }
 
-/* Global transition for theme changes */
-*,
+/* Transições suaves - DESATIVADAS */
+/* *,
 *::before,
 *::after {
-  transition: background-color 0.5s ease, border-color 0.5s ease,
-    color 0.5s ease, fill 0.5s ease, stroke 0.5s ease, opacity 0.5s ease,
-    box-shadow 0.5s ease, transform 0.5s ease;
-}
+  transition: background-color 0.4s ease, border-color 0.4s ease,
+    color 0.4s ease, fill 0.4s ease, stroke 0.4s ease, opacity 0.4s ease,
+    box-shadow 0.4s ease, transform 0.4s ease;
+} */
 
-/* Disable transitions for elements that shouldn't animate */
 *:focus,
 *:focus-visible,
 .no-transition,

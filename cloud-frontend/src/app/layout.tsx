@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "@/providers/AppProviders";
 import { cn } from "@/lib/utils";
+import { UserProvider } from "@/context/userContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,7 +21,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={cn("min-h-screen bg-background font-sans antialiased", inter.className)}>
         <AppProviders attribute="class" defaultTheme="system" enableSystem>
+          <UserProvider>
           {children}
+          </UserProvider>
         </AppProviders>
       </body>
     </html>

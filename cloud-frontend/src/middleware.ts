@@ -1,50 +1,62 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-// O nome do seu cookie de autenticação
-const AUTH_COOKIE_NAME = 'accessToken';
+const AUTH_COOKIE_NAME = 'accessToken'
 
-// 1. Especifique as rotas públicas (que não exigem login)
-const PUBLIC_ROUTES = ['/signin', '/signup', '/signout'];
+// Define as rotas públicas (que qualquer um pode acessar)
+const publicRoutes = [
+  '/',
+]
 
-// 2. Função para verificar se a rota é pública
+// Função para verificar se a rota é pública
 function isPublicRoute(pathname: string): boolean {
-  return PUBLIC_ROUTES.some(route => pathname.startsWith(route));
+  return publicRoutes.some(route => 
+    pathname === route || pathname.startsWith(`${route}/`)
+  )
 }
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const sessionCookie = request.cookies.get(AUTH_COOKIE_NAME);
-  const isPublic = isPublicRoute(pathname);
+  const { pathname } = request.nextUrl
 
-  // Lógica de redirecionamento para usuários LOGADOS
-  // Se o cookie de sessão existe e o usuário tenta acessar uma rota pública...
-  if (sessionCookie && isPublic) {
-    // ...redireciona para o dashboard.
-    return NextResponse.redirect(new URL('/', request.url));
+  // Ignora requisições de arquivos estáticos e imagens
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/static') ||
+    pathname.match(/\.(png|jpg|jpeg|gif|svg|ico|webp|css|js|woff|woff2|ttf|eot)$/)
+  ) {
+    return NextResponse.next()
   }
 
-  // Lógica de redirecionamento para usuários DESLOGADOS
-  // Se o cookie não existe e o usuário tenta acessar uma rota privada...
-  if (!sessionCookie && !isPublic) {
-    // ...redireciona para a página de login.
-    return NextResponse.redirect(new URL('/signin', request.url));
+  const sessionCookie = request.cookies.get(AUTH_COOKIE_NAME)
+
+  // Detecta ambiente (produção vs local)
+  const isProduction = process.env.NODE_ENV === 'production'
+  const authBaseUrl = isProduction
+    ? 'https://auth.tehkly.com'
+    : 'http://localhost:3004'
+
+  // Rotas públicas: permite acesso independente de estar logado ou não
+  if (isPublicRoute(pathname)) {
+    return NextResponse.next()
   }
 
-  // Se nenhuma das condições acima for atendida, permite que a requisição continue.
-  return NextResponse.next();
+  // Usuário não logado tentando acessar rota protegida → redireciona para login
+  if (!sessionCookie) {
+    const signinUrl = `${authBaseUrl}/signin?redirect=${encodeURIComponent(request.url)}`
+    return NextResponse.redirect(signinUrl)
+  }
+
+  return NextResponse.next()
 }
 
-// O matcher define em QUAIS rotas o middleware será executado.
-// Isso evita que o middleware rode em requisições desnecessárias (ex: imagens, arquivos estáticos).
 export const config = {
   matcher: [
     /*
-     * Corresponde a todas as rotas, exceto as que começam com:
-     * - api (rotas de API)
-     * - _next/static (arquivos estáticos)
-     * - _next/image (imagens otimizadas)
-     * - favicon.ico (ícone de favoritos)
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
      */
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],

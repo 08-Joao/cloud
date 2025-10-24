@@ -2,11 +2,22 @@ import axios from "axios";
 
 const baseURL =
     typeof window !== 'undefined' && window.location.hostname.endsWith('tehkly.com')
-        ? 'https://api-cloud.tehkly.com/api'
-        : 'http://localhost:4002/api';
+        ? 'https://api-cloud.tehkly.com/'
+        : 'http://localhost:4002/';
+
+const authURL =
+    typeof window !== 'undefined' && window.location.hostname.endsWith('tehkly.com')
+        ? 'https://api-auth.tehkly.com/'
+        : 'http://localhost:4004/';
 
 const backendRoute = axios.create({
     baseURL,
+    withCredentials: true
+})
+
+
+const authRoute = axios.create({
+    baseURL: authURL,
     withCredentials: true
 })
 
@@ -25,4 +36,4 @@ backendRoute.interceptors.response.use(
     }
 );
 
-export default backendRoute
+export { authRoute, backendRoute };

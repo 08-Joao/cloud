@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { UserModule } from 'src/user/application/user.module';
 import { AuthGuard } from '../infrastructure/guards/auth.guard';
 import { HttpModule } from '@nestjs/axios';
@@ -9,10 +9,10 @@ import { HttpModule } from '@nestjs/axios';
       timeout: 5000,
       maxRedirects: 3,
     }),
-    UserModule, 
+    forwardRef(() => UserModule), 
   ],
   providers: [AuthGuard],
-  exports: [AuthGuard],
+  exports: [AuthGuard, HttpModule, forwardRef(() => UserModule)],
 })
 
 export class AuthModule {}

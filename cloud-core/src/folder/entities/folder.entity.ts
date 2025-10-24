@@ -1,5 +1,6 @@
 import { UserEntity } from "src/user/entities/user.entity";
 import { FolderShareEntity } from "./folder-share.entity";
+import { FileEntity } from "src/file/entities/file.entity";
 
 export class FolderEntity {
   id: string;
@@ -7,7 +8,7 @@ export class FolderEntity {
   parentId?: string | null;
   ownerId: string;
   rootOwner?: UserEntity | null;
-  files?: File[];
+  files?: FileEntity[];
   shares?: FolderShareEntity[];
 
   isPublic: boolean;

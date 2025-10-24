@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
@@ -6,10 +7,21 @@ import { UserModule } from './user/application/user.module';
 import { AuthModule } from './auth/application/auth.module';
 import { FolderModule } from './folder/application/folder.module';
 import { FileModule } from './file/application/file.module';
-
+import { BackblazeModule } from './backblaze/backblaze.module';
 
 @Module({
-  imports: [PrismaModule, UserModule, AuthModule, FolderModule, FileModule],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
+    PrismaModule,
+    UserModule,
+    AuthModule,
+    FolderModule,
+    FileModule,
+    BackblazeModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
