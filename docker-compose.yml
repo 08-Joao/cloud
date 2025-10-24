@@ -5,7 +5,7 @@ services:
     container_name: cloud_postgres
     image: postgres:16-alpine
     ports:
-      - "5432:5432"
+      - "5433:5432"  # Mudei para 5433 para evitar conflitos
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-cloud_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-cloud_password}
@@ -16,7 +16,7 @@ services:
     networks:
       - cloud_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cloud_user -d cloud_db"] 
+      test: ["CMD-SHELL", "pg_isready"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -35,6 +35,11 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+      - AUTH_API_URL=${AUTH_API_URL}
+      - B2_APPLICATION_KEY_ID=${B2_APPLICATION_KEY_ID}
+      - B2_APPLICATION_KEY=${B2_APPLICATION_KEY}
+      - B2_BUCKET_NAME=${B2_BUCKET_NAME}
+      - B2_ENDPOINT=${B2_ENDPOINT}
     volumes:
       - cloud_uploads:/app/uploads
     depends_on:
@@ -56,7 +61,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3002
-      - NEXT_PUBLIC_API_URL=http://cloud_backend:4002
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:4002}
     depends_on:
       - cloud_backend
     restart: always
