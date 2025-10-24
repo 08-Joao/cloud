@@ -17,6 +17,7 @@ import { UpdateFileDto } from './dto/update-file.dto';
 import { FileService } from './application/services/file.service';
 import { AuthGuard } from 'src/auth/infrastructure/guards/auth.guard';
 import { BackblazeService } from '../backblaze/backblaze.service';
+import { BadRequestException } from '@nestjs/common';
 
 @Controller('files')
 @UseGuards(AuthGuard)
@@ -112,6 +113,23 @@ export class FileController {
       .header('Content-Disposition', `attachment; filename="${file.name}"`)
       .header('Content-Length', buffer.length.toString())
       .send(buffer);
+  }
+
+  @Get('upload-url')
+  async getUploadUrl(
+    @Query('fileName') fileName: string,
+    @Query('mimeType') mimeType: string,
+    @Request() req: FastifyRequest & { user: { id: string } }
+  ) {
+    if (!fileName || !mimeType) {
+      throw new BadRequestException('fileName e mimeType são obrigatórios');
+    }
+
+    return this.backblazeService.generateSignedUploadUrl(
+      fileName,
+      mimeType,
+      req.user.id
+    );
   }
 
   @Patch(':id')

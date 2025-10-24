@@ -312,6 +312,11 @@ export class BackblazeService {
     authorizationToken: string;
     fileId: string;
     storageKey: string;
+    corsHeaders: {
+      'Access-Control-Allow-Origin': string;
+      'Access-Control-Allow-Methods': string;
+      'Access-Control-Allow-Headers': string;
+    };
   }> {
     try {
       // Gera nome único para o arquivo
@@ -326,7 +331,12 @@ export class BackblazeService {
         uploadUrl: uploadData.uploadUrl,
         authorizationToken: uploadData.authorizationToken,
         fileId: '', // Será preenchido após upload
-        storageKey
+        storageKey,
+        corsHeaders: {
+          'Access-Control-Allow-Origin': 'https://cloud.tehkly.com',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Bz-File-Name, X-Bz-Content-Sha1, X-Bz-Info-src_last_modified_millis'
+        }
       };
     } catch (error) {
       this.logger.error('Erro ao gerar URL de upload assinada', error);
