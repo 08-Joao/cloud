@@ -1,5 +1,5 @@
 
-import { Controller, Get, NotFoundException, UseGuards } from '@nestjs/common';
+import { Controller, Get, Logger, NotFoundException, UseGuards } from '@nestjs/common';
 import { CreateUserDto } from '../../dto/create-user.dto';
 import { UpdateUserDto } from '../../dto/update-user.dto';
 import { UserService } from 'src/user/application/services/user.service';
@@ -14,6 +14,8 @@ export class UserController {
 
   @Get('/me')
   async getMe(@CurrentUser() user: GetGlobalUserDto) {
+    Logger.log("Aqui");
+    Logger.log(user);
     return user;
   }
 

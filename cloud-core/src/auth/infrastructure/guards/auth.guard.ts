@@ -3,6 +3,7 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
@@ -98,7 +99,7 @@ export class AuthGuard implements CanActivate {
       if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
         throw new UnauthorizedException('Serviço de autenticação indisponível');
       }
-
+      Logger.error(error);
       throw new UnauthorizedException('Erro ao validar token');
     }
   }
