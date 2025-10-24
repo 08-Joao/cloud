@@ -46,11 +46,29 @@ COPY --from=builder /app/generated ./generated
 # Create uploads directory
 RUN mkdir -p /app/uploads
 
-# Create entrypoint script
+# Create entrypoint script with better error handling
 RUN echo '#!/bin/sh' > /app/docker-entrypoint.sh && \
     echo 'set -e' >> /app/docker-entrypoint.sh && \
+    echo '' >> /app/docker-entrypoint.sh && \
+    echo 'echo "Waiting for database to be ready..."' >> /app/docker-entrypoint.sh && \
+    echo 'sleep 5' >> /app/docker-entrypoint.sh && \
+    echo '' >> /app/docker-entrypoint.sh && \
     echo 'echo "Running Prisma migrations..."' >> /app/docker-entrypoint.sh && \
-    echo 'npx prisma migrate deploy' >> /app/docker-entrypoint.sh && \
+    echo 'MAX_RETRIES=5' >> /app/docker-entrypoint.sh && \
+    echo 'RETRY_COUNT=0' >> /app/docker-entrypoint.sh && \
+    echo '' >> /app/docker-entrypoint.sh && \
+    echo 'until npx prisma migrate deploy || [ $RETRY_COUNT -eq $MAX_RETRIES ]; do' >> /app/docker-entrypoint.sh && \
+    echo '  RETRY_COUNT=$((RETRY_COUNT+1))' >> /app/docker-entrypoint.sh && \
+    echo '  echo "Migration failed, attempt $RETRY_COUNT of $MAX_RETRIES. Retrying in 10 seconds..."' >> /app/docker-entrypoint.sh && \
+    echo '  sleep 10' >> /app/docker-entrypoint.sh && \
+    echo 'done' >> /app/docker-entrypoint.sh && \
+    echo '' >> /app/docker-entrypoint.sh && \
+    echo 'if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then' >> /app/docker-entrypoint.sh && \
+    echo '  echo "Failed to run migrations after $MAX_RETRIES attempts"' >> /app/docker-entrypoint.sh && \
+    echo '  exit 1' >> /app/docker-entrypoint.sh && \
+    echo 'fi' >> /app/docker-entrypoint.sh && \
+    echo '' >> /app/docker-entrypoint.sh && \
+    echo 'echo "Migrations completed successfully!"' >> /app/docker-entrypoint.sh && \
     echo 'echo "Starting application..."' >> /app/docker-entrypoint.sh && \
     echo 'exec "$@"' >> /app/docker-entrypoint.sh && \
     chmod +x /app/docker-entrypoint.sh
