@@ -42,6 +42,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/generated ./generated
+COPY --from=builder /app/generated ./dist/generated
 
 # Create uploads directory
 RUN mkdir -p /app/uploads
@@ -80,4 +81,4 @@ EXPOSE 4002
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 
 # Start the application
-CMD ["pnpm", "run", "start:prod"]
+CMD ["node", "-r", "tsconfig-paths/register", "dist/src/main.js"]

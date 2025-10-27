@@ -132,7 +132,7 @@ function UploadModal({ folderId, isOpen, onClose, onUploadComplete }: UploadModa
           const { uploadUrl, authorizationToken, storageKey } = data;
 
           // 2. Fazer upload direto para o Backblaze
-          await axios.put(uploadUrl, file, {
+          await axios.post(uploadUrl, file, {
             headers: {
               'Authorization': authorizationToken,
               'Content-Type': file.type,
