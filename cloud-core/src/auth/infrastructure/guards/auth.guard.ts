@@ -6,6 +6,7 @@ import {
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { HttpService } from '@nestjs/axios';
 import { FastifyRequest } from 'fastify';
 import { firstValueFrom } from 'rxjs';
@@ -27,9 +28,16 @@ export class AuthGuard implements CanActivate {
   constructor(
     private httpService: HttpService,
     private userService: UserService,
+    private reflector: Reflector,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Verifica se a rota é pública
+    const isPublic = this.reflector.get<boolean>('isPublic', context.getHandler());
+    if (isPublic) {
+      return true;
+    }
+
     const request = context.switchToHttp().getRequest<FastifyRequest>();
 
     // Pega o cookie accessToken (httpOnly, domain .tehkly.com)

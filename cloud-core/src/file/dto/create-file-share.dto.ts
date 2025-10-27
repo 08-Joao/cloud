@@ -1,5 +1,5 @@
 import { IsEnum, IsOptional, IsString, IsDateString } from 'class-validator';
-import { FileRole } from 'generated/prisma';
+import { FileRole } from '@prisma/client';
 
 export class CreateFileShareDto {
   @IsString()

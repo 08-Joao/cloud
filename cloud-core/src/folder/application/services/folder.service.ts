@@ -9,7 +9,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateFolderDto } from 'src/folder/dto/create-folder.dto';
 import { UpdateFolderDto } from 'src/folder/dto/update-folder.dto';
 import { FolderEntity } from 'src/folder/entities/folder.entity';
-import { FolderRole } from 'generated/prisma';
+import { FolderRole } from '@prisma/client';
 
 @Injectable()
 export class FolderService {

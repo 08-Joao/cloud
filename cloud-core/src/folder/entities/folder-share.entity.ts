@@ -1,4 +1,4 @@
-import { FolderRole } from "generated/prisma";
+import { FolderRole } from '@prisma/client';
 
 export class FolderShareEntity {
   id: string;

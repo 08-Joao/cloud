@@ -297,7 +297,11 @@ export class BackblazeService {
   /**
    * Gera URL pública para um arquivo
    */
-  getPublicUrl(storageKey: string): string {
+  async getPublicUrl(storageKey: string): Promise<string> {
+    // Garante que está autenticado
+    if (!this.downloadUrl) {
+      await this.authenticate();
+    }
     const bucketName = this.configService.get<string>('B2_BUCKET_NAME');
     return `${this.downloadUrl}/file/${bucketName}/${storageKey}`;
   }

@@ -1,4 +1,4 @@
-import { FileRole } from "generated/prisma";
+import { FileRole } from '@prisma/client';
 
 export class FileShareEntity {
   id: string;

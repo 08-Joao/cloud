@@ -1,5 +1,5 @@
 import { IsEnum, IsOptional, IsString } from 'class-validator';
-import { FolderRole } from 'generated/prisma';
+import { FolderRole } from '@prisma/client';
 
 export class CreateFolderShareDto {
   @IsString()

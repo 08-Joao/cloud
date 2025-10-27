@@ -18,6 +18,7 @@ import { FileService } from './application/services/file.service';
 import { AuthGuard } from 'src/auth/infrastructure/guards/auth.guard';
 import { BackblazeService } from '../backblaze/backblaze.service';
 import { BadRequestException } from '@nestjs/common';
+import { Public } from 'src/auth/infrastructure/decorators/public.decorator';
 
 @Controller('files')
 @UseGuards(AuthGuard)
@@ -99,9 +100,21 @@ export class FileController {
     return this.fileService.findSharedByMe(req.user.id);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string, @Request() req) {
-    return this.fileService.findOne(id, req.user.id);
+  @Public()
+  @Get('download/:fileId/:token')
+  async downloadFileWithToken(
+    @Param('fileId') fileId: string,
+    @Param('token') token: string
+  ) {
+    const downloadUrl = await this.fileService.getDownloadUrlWithToken(token, fileId);
+    return { downloadUrl };
+  }
+
+  @Get(':id/download-token')
+  async generateDownloadToken(@Param('id') id: string, @Request() req) {
+    const file = await this.fileService.findOne(id, req.user.id);
+    const token = this.fileService.generateDownloadToken(id, req.user.id);
+    return { token, fileId: id };
   }
 
   @Get(':id/download')
@@ -113,6 +126,11 @@ export class FileController {
       .header('Content-Disposition', `attachment; filename="${file.name}"`)
       .header('Content-Length', buffer.length.toString())
       .send(buffer);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string, @Request() req) {
+    return this.fileService.findOne(id, req.user.id);
   }
 
   @Get('upload-url')

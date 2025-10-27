@@ -13,7 +13,7 @@ import { CreateFileDto } from 'src/file/dto/create-file.dto';
 import { UpdateFileDto } from 'src/file/dto/update-file.dto';
 import { UploadFileDto } from 'src/file/dto/upload-file.dto';
 import { FileEntity } from 'src/file/entities/file.entity';
-import { FileRole } from 'generated/prisma';
+import { FileRole } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 
@@ -499,6 +499,68 @@ export class FileService {
     } catch (error) {
       this.logger.error('Erro ao registrar arquivo', error);
       throw new InternalServerErrorException('Falha ao registrar arquivo');
+    }
+  }
+
+  /**
+   * Gera um token de download único baseado em HMAC
+   */
+  generateDownloadToken(fileId: string, userId: string): string {
+    const payload = `${fileId}:${userId}`;
+    const token = crypto
+      .createHmac('sha256', this.configService.getOrThrow<string>('DOWNLOAD_TOKEN_SECRET'))
+      .update(payload)
+      .digest('hex');
+    return token;
+  }
+
+  /**
+   * Valida token de download e retorna URL pública do Backblaze
+   */
+  async getDownloadUrlWithToken(token: string, fileId: string): Promise<string> {
+    const file = await this.prisma.file.findUnique({
+      where: { id: fileId },
+    });
+
+    if (!file) {
+      throw new NotFoundException('Arquivo não encontrado');
+    }
+
+    // Validar token - gera o token esperado com o userId do dono
+    const expectedToken = this.generateDownloadToken(fileId, file.ownerId);
+    if (token !== expectedToken) {
+      throw new ForbiddenException('Token de download inválido ou expirado');
+    }
+
+    this.logger.log(`URL de download gerada para arquivo ${file.name} via token`);
+    return await this.backblazeService.getPublicUrl(file.storageKey);
+  }
+
+  /**
+   * Valida token de download e retorna o arquivo (legado)
+   */
+  async downloadFileWithToken(token: string, fileId: string): Promise<{ buffer: Buffer; file: FileEntity }> {
+    const file = await this.prisma.file.findUnique({
+      where: { id: fileId },
+    });
+
+    if (!file) {
+      throw new NotFoundException('Arquivo não encontrado');
+    }
+
+    // Validar token - gera o token esperado com o userId do dono
+    const expectedToken = this.generateDownloadToken(fileId, file.ownerId);
+    if (token !== expectedToken) {
+      throw new ForbiddenException('Token de download inválido ou expirado');
+    }
+
+    try {
+      const buffer = await this.backblazeService.downloadFile(file.storageKey);
+      this.logger.log(`Arquivo ${file.name} baixado via token por usuário ${file.ownerId}`);
+      return { buffer, file };
+    } catch (error) {
+      this.logger.error('Erro ao fazer download do arquivo', error);
+      throw error;
     }
   }
 }
