@@ -8,6 +8,7 @@ import { Download, File, Folder2, PenNewSquare, Share, TrashBin2, Upload } from 
 import React, { useEffect, use, useState } from 'react'
 import { motion } from 'framer-motion';
 import UploadModal from '@/components/modals/uploadModal';
+import EditFileModal from '@/components/modals/editFileModal';
 
 
 const AuroraBackground = () => (
@@ -24,7 +25,6 @@ const GlassCard = ({ children, className = '' }: { children: React.ReactNode, cl
     </div>
 );
 
-// NOVO COMPONENTE: Skeleton da página
 const FolderSkeleton = () => (
     <div className="space-y-8">
         {/* Skeleton das Pastas */}
@@ -53,16 +53,16 @@ const FolderSkeleton = () => (
                     <table className="w-full">
                         <thead className="bg-muted/50 border-b border-foreground/10">
                             <tr>
-                                <th className="px-6 py-4 text-left">
+                                <th className="px-6 py-4 text-center">
                                     <div className="h-3 bg-muted/50 rounded w-16 animate-pulse" />
                                 </th>
-                                <th className="px-6 py-4 text-left">
+                                <th className="px-6 py-4 text-center">
                                     <div className="h-3 bg-muted/50 rounded w-12 animate-pulse" />
                                 </th>
-                                <th className="px-6 py-4 text-left">
+                                <th className="px-6 py-4 text-center">
                                     <div className="h-3 bg-muted/50 rounded w-12 animate-pulse" />
                                 </th>
-                                <th className="px-6 py-4 text-left">
+                                <th className="px-6 py-4 text-center">
                                     <div className="h-3 bg-muted/50 rounded w-24 animate-pulse" />
                                 </th>
                                 <th className="px-6 py-4 text-center">
@@ -109,19 +109,151 @@ const FolderSkeleton = () => (
 );
 
 
+interface UploadingFile {
+    name: string;
+    size: number;
+    progress: number;
+    mimeType: string;
+    originalName: string;
+}
+
 function Folder({ params }: { params: Promise<{ folderId: string }> }) {
     const { folderId } = use(params)
     const { user, loading, error, refreshUser } = useUser();
     const [loadedFolder, setLoadedFolder] = useState<FolderEntity | null>(null);
     const [isOpen, setIsOpen] = useState(false);
+    const [uploadingFile, setUploadingFile] = useState<UploadingFile | null>(null);
+    const [editingFile, setEditingFile] = useState<any | null>(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [downloadingFileId, setDownloadingFileId] = useState<string | null>(null);
+    const [downloadProgress, setDownloadProgress] = useState(0);
     
-    const onUploadComplete = () => {
+    const onUploadComplete = async () => {
         setIsOpen(false);
+        setUploadingFile(null);
+        // Recarregar a pasta para mostrar o novo arquivo
+        const response = await Api.getFolderDetails(folderId);
+        if (response) {
+            setLoadedFolder(response.data);
+        }
         refreshUser();
+    };
+
+    const onUploadProgress = (file: UploadingFile) => {
+        setUploadingFile(file);
     };
 
     const onClose = () => {
         setIsOpen(false);
+    };
+
+    const handleEditFile = (file: any) => {
+        setEditingFile(file);
+        setIsEditModalOpen(true);
+    };
+
+    const handleSaveEdit = async () => {
+        const response = await Api.getFolderDetails(folderId);
+        if (response) {
+            setLoadedFolder(response.data);
+        }
+        setIsEditModalOpen(false);
+        setEditingFile(null);
+    };
+
+    const handleDownloadFile = async (fileId: string, fileName: string) => {
+        try {
+            setDownloadingFileId(fileId);
+            setDownloadProgress(0);
+
+            // 1. Obter token do backend
+            const response = await Api.getDownloadToken(fileId);
+            if (!response?.data?.token) {
+                console.error('Token não obtido');
+                setDownloadingFileId(null);
+                return;
+            }
+
+            const baseURL = typeof window !== 'undefined' && window.location.hostname.endsWith('tehkly.com')
+                ? 'https://api-cloud.tehkly.com'
+                : 'http://localhost:4002';
+            
+            // 2. Obter URL do Backblaze
+            const downloadUrlResponse = await fetch(`${baseURL}/files/download/${fileId}/${response.data.token}`);
+            const data = await downloadUrlResponse.json();
+            const backblazeUrl = data.downloadUrl;
+
+            if (!backblazeUrl) {
+                console.error('URL de download não obtida');
+                setDownloadingFileId(null);
+                return;
+            }
+
+            // 3. Fazer download direto do Backblaze com progresso
+            const fileResponse = await fetch(backblazeUrl, {
+                mode: 'cors',
+                credentials: 'omit'
+            });
+
+            if (!fileResponse.ok) {
+                throw new Error(`HTTP error! status: ${fileResponse.ok}`);
+            }
+
+            const contentLength = fileResponse.headers.get('content-length');
+            const total = parseInt(contentLength || '0', 10);
+            
+            const reader = fileResponse.body?.getReader();
+            if (!reader) throw new Error('No reader available');
+
+            const chunks: BlobPart[] = [];
+            let loaded = 0;
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                chunks.push(value);
+                loaded += value.length;
+                
+                if (total > 0) {
+                    const percentComplete = Math.round((loaded / total) * 100);
+                    setDownloadProgress(percentComplete);
+                }
+            }
+
+            // Combinar chunks em um único blob
+            const blob = new Blob(chunks as BlobPart[]);
+            const url = window.URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            
+            setDownloadingFileId(null);
+            setDownloadProgress(0);
+        } catch (err) {
+            console.error('Erro ao fazer download:', err);
+            setDownloadingFileId(null);
+            setDownloadProgress(0);
+        }
+    };
+
+    const handleDeleteFile = async (fileId: string) => {
+        if (confirm('Tem certeza que deseja deletar este arquivo?')) {
+            try {
+                await Api.deleteFile(fileId);
+                const response = await Api.getFolderDetails(folderId);
+                if (response) {
+                    setLoadedFolder(response.data);
+                }
+            } catch (err) {
+                console.error('Erro ao deletar arquivo:', err);
+            }
+        }
     };
 
 
@@ -220,16 +352,16 @@ function Folder({ params }: { params: Promise<{ folderId: string }> }) {
                                             <table className="w-full">
                                                 <thead className="bg-muted/50 border-b border-foreground/10">
                                                     <tr>
-                                                        <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                                        <th className="px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                                                             Name
                                                         </th>
-                                                        <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                                        <th className="px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                                                             Type
                                                         </th>
-                                                        <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                                        <th className="px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                                                             Size
                                                         </th>
-                                                        <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                                        <th className="px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                                                             Last Time Modified
                                                         </th>
                                                         <th className="px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -238,6 +370,51 @@ function Folder({ params }: { params: Promise<{ folderId: string }> }) {
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-foreground/10">
+                                                    {uploadingFile && (
+                                                        <motion.tr
+                                                            initial={{ opacity: 0, x: -20 }}
+                                                            animate={{ opacity: 1, x: 0 }}
+                                                            transition={{ duration: 0.3 }}
+                                                            className="hover:bg-muted/50 transition-colors group bg-primary/5"
+                                                        >
+                                                            <td className="px-6 py-4">
+                                                                <div className="flex items-center gap-4">
+                                                                    <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl group-hover:scale-110 transition-transform duration-300 animate-pulse">
+                                                                        📤
+                                                                    </div>
+                                                                    <div className="min-w-0">
+                                                                        <div className="font-medium text-foreground truncate">
+                                                                            {uploadingFile.originalName}
+                                                                        </div>
+                                                                        <div className="text-xs text-muted-foreground">
+                                                                            Enviando... {uploadingFile.progress}%
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-center">
+                                                                <div className="bg-elevation-1 w-fit px-2 py-1 rounded-sm flex items-center justify-center mx-auto">
+                                                                    <span className='text-xs font-bold text-muted-foreground'>
+                                                                        {uploadingFile.mimeType.split('/')[1]?.toUpperCase() || 'FILE'}
+                                                                    </span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-center text-sm text-muted-foreground font-medium">
+                                                                {formatBytes(uploadingFile.size)}
+                                                            </td>
+                                                            <td className="px-6 py-4 text-center text-sm text-muted-foreground">
+                                                                -
+                                                            </td>
+                                                            <td className="px-6 py-4">
+                                                                <div className="w-full bg-muted rounded-full h-1 overflow-hidden">
+                                                                    <div 
+                                                                        className="bg-primary h-full transition-all duration-300"
+                                                                        style={{ width: `${uploadingFile.progress}%` }}
+                                                                    />
+                                                                </div>
+                                                            </td>
+                                                        </motion.tr>
+                                                    )}
                                                     {loadedFolder.files.map((file: any, index: number) => {
                                                         const fileIcon = getFileIcon(file.mimeType);
                                                         return (
@@ -265,54 +442,71 @@ function Folder({ params }: { params: Promise<{ folderId: string }> }) {
                                                                         </div>
                                                                     </div>
                                                                 </td>
-                                                                <td className="px-6 py-4">
-                                                                    <div className="bg-elevation-1 w-9 px-2 py-1 rounded-sm flex items-center justify-center">
+                                                                <td className="px-6 py-4 text-center">
+                                                                    <div className="bg-elevation-1 w-fit px-2 py-1 rounded-sm flex items-center justify-center mx-auto">
                                                                         <span className='text-xs font-bold text-muted-foreground'>
                                                                             {getFileType(file.mimeType)}
                                                                         </span>
                                                                     </div>
                                                                 </td>
-                                                                <td className="px-6 py-4 text-sm text-muted-foreground font-medium">
+                                                                <td className="px-6 py-4 text-center text-sm text-muted-foreground font-medium">
                                                                     {formatBytes(file.size)}
                                                                 </td>
-                                                                <td className="px-6 py-4 text-sm text-muted-foreground">
+                                                                <td className="px-6 py-4 text-center text-sm text-muted-foreground">
                                                                     {new Date(file.updatedAt).toLocaleDateString('pt-BR')}
                                                                 </td>
                                                                 <td className="px-6 py-4">
-                                                                    <div className="flex items-center justify-end gap-2">
-                                                                        <motion.button
-                                                                            whileHover={{ scale: 1.1 }}
-                                                                            whileTap={{ scale: 0.9 }}
-                                                                            className="p-2 text-primary hover:bg-primary/10 rounded-xl transition-all duration-200"
-                                                                            title="Compartilhar"
-                                                                        >
-                                                                            <Share className="w-5 h-5" />
-                                                                        </motion.button>
-                                                                        <motion.button
-                                                                            whileHover={{ scale: 1.1 }}
-                                                                            whileTap={{ scale: 0.9 }}
-                                                                            className="p-2 text-muted-foreground hover:bg-muted rounded-xl transition-all duration-200"
-                                                                            title="Download"
-                                                                        >
-                                                                            <Download className="w-5 h-5" />
-                                                                        </motion.button>
-                                                                        <motion.button
-                                                                            whileHover={{ scale: 1.1 }}
-                                                                            whileTap={{ scale: 0.9 }}
-                                                                            className="p-2 text-muted-foreground hover:bg-muted rounded-xl transition-all duration-200"
-                                                                            title="Editar"
-                                                                        >
-                                                                            <PenNewSquare className="w-5 h-5" />
-                                                                        </motion.button>
-                                                                        <motion.button
-                                                                            whileHover={{ scale: 1.1 }}
-                                                                            whileTap={{ scale: 0.9 }}
-                                                                            className="p-2 text-destructive hover:bg-destructive/10 rounded-xl transition-all duration-200"
-                                                                            title="Deletar"
-                                                                        >
-                                                                            <TrashBin2 className="w-5 h-5" />
-                                                                        </motion.button>
-                                                                    </div>
+                                                                    {downloadingFileId === file.id ? (
+                                                                        <div className="flex items-center justify-end gap-2">
+                                                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                                                <span>{downloadProgress}%</span>
+                                                                                <div className="w-16 bg-muted rounded-full h-1 overflow-hidden">
+                                                                                    <div 
+                                                                                        className="bg-primary h-full transition-all duration-300"
+                                                                                        style={{ width: `${downloadProgress}%` }}
+                                                                                    />
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="flex items-center justify-end gap-2">
+                                                                            <motion.button
+                                                                                whileHover={{ scale: 1.1 }}
+                                                                                whileTap={{ scale: 0.9 }}
+                                                                                className="p-2 text-primary hover:bg-primary/10 rounded-xl transition-all duration-200"
+                                                                                title="Compartilhar"
+                                                                            >
+                                                                                <Share className="w-5 h-5" />
+                                                                            </motion.button>
+                                                                            <motion.button
+                                                                                whileHover={{ scale: 1.1 }}
+                                                                                whileTap={{ scale: 0.9 }}
+                                                                                onClick={() => handleDownloadFile(file.id, file.name)}
+                                                                                className="p-2 text-muted-foreground hover:bg-muted rounded-xl transition-all duration-200"
+                                                                                title="Download"
+                                                                            >
+                                                                                <Download className="w-5 h-5" />
+                                                                            </motion.button>
+                                                                            <motion.button
+                                                                                whileHover={{ scale: 1.1 }}
+                                                                                whileTap={{ scale: 0.9 }}
+                                                                                onClick={() => handleEditFile(file)}
+                                                                                className="p-2 text-muted-foreground hover:bg-muted rounded-xl transition-all duration-200"
+                                                                                title="Editar"
+                                                                            >
+                                                                                <PenNewSquare className="w-5 h-5" />
+                                                                            </motion.button>
+                                                                            <motion.button
+                                                                                whileHover={{ scale: 1.1 }}
+                                                                                whileTap={{ scale: 0.9 }}
+                                                                                onClick={() => handleDeleteFile(file.id)}
+                                                                                className="p-2 text-destructive hover:bg-destructive/10 rounded-xl transition-all duration-200"
+                                                                                title="Deletar"
+                                                                            >
+                                                                                <TrashBin2 className="w-5 h-5" />
+                                                                            </motion.button>
+                                                                        </div>
+                                                                    )}
                                                                 </td>
                                                             </motion.tr>
                                                         );
@@ -345,7 +539,17 @@ function Folder({ params }: { params: Promise<{ folderId: string }> }) {
                                     </GlassCard>
                                 </motion.div>
                             )}
-                            <UploadModal folderId={loadedFolder?.id || ''} isOpen={isOpen} onClose={onClose} onUploadComplete={onUploadComplete} />
+                            <UploadModal folderId={loadedFolder?.id || ''} isOpen={isOpen} onClose={onClose} onUploadComplete={onUploadComplete} onUploadProgress={onUploadProgress} />
+                            {editingFile && (
+                                <EditFileModal 
+                                    fileId={editingFile.id}
+                                    fileName={editingFile.name}
+                                    fileDescription={editingFile.description}
+                                    isOpen={isEditModalOpen}
+                                    onClose={() => setIsEditModalOpen(false)}
+                                    onSave={handleSaveEdit}
+                                />
+                            )}
                         </div>
                     )}
                 </div>

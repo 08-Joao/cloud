@@ -211,15 +211,23 @@ const Api = {
         }
     },
 
-    // updateFile: async function (id: string, data : UPdateF) {
-    //     try {
-    //         const response = await backendRoute.patch(`/files/${id}`, data, { withCredentials: true })
-    //         return response
-    //     } catch(e) {
-    //         console.error("Erro em updateFile:", e)
-    //     }
-    // },
+    getDownloadToken: async function (id: string) {
+        try {
+            const response = await backendRoute.get(`/files/${id}/download-token`, { withCredentials: true })
+            return response
+        } catch(e) {
+            console.error("Erro em getDownloadToken:", e)
+        }
+    },
 
+    updateFile: async function (id: string, data: any) {
+        try {
+            const response = await backendRoute.patch(`/files/${id}`, data, { withCredentials: true })
+            return response
+        } catch(e) {
+            console.error("Erro em updateFile:", e)
+        }
+    },
 
     deleteFile: async function (id: string) {
         try {

@@ -26,11 +26,20 @@ function GlassModal({ isOpen, onClose, children, className = '' }: {
 }
 
 
+interface UploadingFile {
+    name: string;
+    size: number;
+    progress: number;
+    mimeType: string;
+    originalName: string;
+}
+
 interface UploadModalProps {
     folderId: string;
     isOpen: boolean;
     onClose: () => void;
-    onUploadComplete: () => void;
+    onUploadComplete: (uploadedFile?: UploadingFile) => void;
+    onUploadProgress?: (file: UploadingFile) => void;
 }
 
 interface SignedUrlResponse {
@@ -39,7 +48,7 @@ interface SignedUrlResponse {
   storageKey: string;
 }
 
-function UploadModal({ folderId, isOpen, onClose, onUploadComplete }: UploadModalProps) {
+function UploadModal({ folderId, isOpen, onClose, onUploadComplete, onUploadProgress }: UploadModalProps) {
     const [file, setFile] = useState<File | null>(null);
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
@@ -143,6 +152,17 @@ function UploadModal({ folderId, isOpen, onClose, onUploadComplete }: UploadModa
               if (progressEvent.total) {
                 const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
                 setUploadProgress(percent);
+                
+                // Chamar callback de progresso para mostrar na lista
+                if (onUploadProgress) {
+                  onUploadProgress({
+                    name,
+                    size: file.size,
+                    progress: percent,
+                    mimeType: file.type,
+                    originalName: name
+                  });
+                }
               }
             }
           });
@@ -153,7 +173,7 @@ function UploadModal({ folderId, isOpen, onClose, onUploadComplete }: UploadModa
             name,
             size: file.size,
             mimeType: file.type,
-            originalName: file.name,
+            originalName: name,
             description,
             tags: tags.split(',').map(t => t.trim()).filter(Boolean)
           });
