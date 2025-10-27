@@ -68,7 +68,8 @@ export class BackblazeService {
 
       this.logger.log('Autenticado com sucesso no Backblaze B2');
     } catch (error) {
-      this.logger.error('Erro ao autenticar com Backblaze B2', error);
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+      this.logger.error(`Erro ao autenticar com Backblaze B2: ${errorMessage}`, error);
       throw new InternalServerErrorException('Falha na autenticação com Backblaze B2');
     }
   }
@@ -109,7 +110,8 @@ export class BackblazeService {
       this.bucketId = bucket.bucketId;
       return this.bucketId;
     } catch (error) {
-      this.logger.error('Erro ao buscar bucket ID', error);
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+      this.logger.error(`Erro ao buscar bucket ID: ${errorMessage}`, error);
       throw new InternalServerErrorException('Falha ao buscar bucket');
     }
   }
@@ -137,7 +139,8 @@ export class BackblazeService {
 
       return response.data;
     } catch (error) {
-      this.logger.error('Erro ao obter URL de upload', error);
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+      this.logger.error(`Erro ao obter URL de upload: ${errorMessage}`, error);
       throw new InternalServerErrorException('Falha ao obter URL de upload');
     }
   }
@@ -339,7 +342,8 @@ export class BackblazeService {
         }
       };
     } catch (error) {
-      this.logger.error('Erro ao gerar URL de upload assinada', error);
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+      this.logger.error(`Erro ao gerar URL de upload assinada: ${errorMessage}`, error);
       throw new InternalServerErrorException('Falha ao gerar URL de upload');
     }
   }
