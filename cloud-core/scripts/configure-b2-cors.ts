@@ -70,17 +70,35 @@ async function configureCORS() {
       {
         corsRuleName: 'allowCloudTehkly',
         allowedOrigins: ['https://cloud.tehkly.com'],
-        allowedOperations: ['b2_upload_file', 'b2_upload_part', 's3_put', 's3_post'],
+        allowedOperations: [
+          'b2_upload_file', 
+          'b2_upload_part', 
+          'b2_download_file_by_name',
+          'b2_download_file_by_id',
+          's3_put', 
+          's3_post', 
+          's3_get',
+          's3_head'
+        ],
         allowedHeaders: ['*'],
-        exposeHeaders: ['x-bz-content-sha1', 'x-bz-file-id', 'x-bz-file-name'],
+        exposeHeaders: ['x-bz-content-sha1', 'x-bz-file-id', 'x-bz-file-name', 'content-length', 'content-type', 'x-bz-info-src_last_modified_millis'],
         maxAgeSeconds: 3600,
       },
       {
         corsRuleName: 'allowLocalhost',
         allowedOrigins: ['http://localhost:3002', 'http://localhost:3000'],
-        allowedOperations: ['b2_upload_file', 'b2_upload_part', 's3_put', 's3_post'],
+        allowedOperations: [
+          'b2_upload_file', 
+          'b2_upload_part', 
+          'b2_download_file_by_name',
+          'b2_download_file_by_id',
+          's3_put', 
+          's3_post', 
+          's3_get',
+          's3_head'
+        ],
         allowedHeaders: ['*'],
-        exposeHeaders: ['x-bz-content-sha1', 'x-bz-file-id', 'x-bz-file-name'],
+        exposeHeaders: ['x-bz-content-sha1', 'x-bz-file-id', 'x-bz-file-name', 'content-length', 'content-type', 'x-bz-info-src_last_modified_millis'],
         maxAgeSeconds: 3600,
       },
     ];

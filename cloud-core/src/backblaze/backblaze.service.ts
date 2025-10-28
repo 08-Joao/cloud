@@ -351,4 +351,49 @@ export class BackblazeService {
       throw new InternalServerErrorException('Falha ao gerar URL de upload');
     }
   }
+
+  /**
+   * Gera uma URL pré-assinada de download do Backblaze B2
+   * Esta URL permite download direto do frontend sem passar pelo backend
+   * Usa b2_get_download_authorization para gerar token temporário
+   */
+  async generateSignedDownloadUrl(
+    storageKey: string,
+    expiresInSeconds = 3600 // 1 hora padrão
+  ): Promise<string> {
+    if (!this.authToken) {
+      await this.authenticate();
+    }
+
+    try {
+      const bucketName = this.configService.get<string>('B2_BUCKET_NAME');
+      const bucketId = await this.getBucketId();
+      
+      // Gera token de download temporário
+      const response = await this.httpClient.post(
+        `${this.apiUrl}/b2api/v2/b2_get_download_authorization`,
+        {
+          bucketId,
+          fileNamePrefix: storageKey,
+          validDurationInSeconds: expiresInSeconds,
+        },
+        {
+          headers: {
+            Authorization: this.authToken,
+          },
+        },
+      );
+
+      const downloadToken = response.data.authorizationToken;
+      
+      // URL com token de autorização como query parameter
+      const fileUrl = `${this.downloadUrl}/file/${bucketName}/${storageKey}?Authorization=${downloadToken}`;
+      
+      return fileUrl;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+      this.logger.error(`Erro ao gerar URL de download assinada: ${errorMessage}`, error);
+      throw new InternalServerErrorException('Falha ao gerar URL de download');
+    }
+  }
 }

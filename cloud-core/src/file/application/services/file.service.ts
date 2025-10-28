@@ -515,7 +515,7 @@ export class FileService {
   }
 
   /**
-   * Valida token de download e retorna URL pública do Backblaze
+   * Valida token de download e retorna URL pré-assinada do Backblaze
    */
   async getDownloadUrlWithToken(token: string, fileId: string): Promise<string> {
     const file = await this.prisma.file.findUnique({
@@ -533,7 +533,11 @@ export class FileService {
     }
 
     this.logger.log(`URL de download gerada para arquivo ${file.name} via token`);
-    return await this.backblazeService.getPublicUrl(file.storageKey);
+    
+    // Gera URL pré-assinada (já inclui o token de autorização como query parameter)
+    const downloadUrl = await this.backblazeService.generateSignedDownloadUrl(file.storageKey);
+    
+    return downloadUrl;
   }
 
   /**

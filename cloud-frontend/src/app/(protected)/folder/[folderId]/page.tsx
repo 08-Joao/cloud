@@ -167,8 +167,8 @@ function Folder({ params }: { params: Promise<{ folderId: string }> }) {
             setDownloadProgress(0);
 
             // 1. Obter token do backend
-            const response = await Api.getDownloadToken(fileId);
-            if (!response?.data?.token) {
+            const tokenResponse = await Api.getDownloadToken(fileId);
+            if (!tokenResponse?.data?.token) {
                 console.error('Token não obtido');
                 setDownloadingFileId(null);
                 return;
@@ -178,25 +178,26 @@ function Folder({ params }: { params: Promise<{ folderId: string }> }) {
                 ? 'https://api-cloud.tehkly.com'
                 : 'http://localhost:4002';
             
-            // 2. Obter URL do Backblaze
-            const downloadUrlResponse = await fetch(`${baseURL}/files/download/${fileId}/${response.data.token}`);
-            const data = await downloadUrlResponse.json();
-            const backblazeUrl = data.downloadUrl;
-
-            if (!backblazeUrl) {
+            // 2. Obter URL pré-assinada do Backblaze (já inclui token como query parameter)
+            const downloadDataResponse = await fetch(`${baseURL}/files/download/${fileId}/${tokenResponse.data.token}`);
+            const downloadData = await downloadDataResponse.json();
+            
+            if (!downloadData.downloadUrl) {
                 console.error('URL de download não obtida');
                 setDownloadingFileId(null);
                 return;
             }
 
             // 3. Fazer download direto do Backblaze com progresso
-            const fileResponse = await fetch(backblazeUrl, {
+            // Não enviamos headers customizados para evitar preflight CORS
+            const fileResponse = await fetch(downloadData.downloadUrl, {
+                method: 'GET',
                 mode: 'cors',
                 credentials: 'omit'
             });
 
             if (!fileResponse.ok) {
-                throw new Error(`HTTP error! status: ${fileResponse.ok}`);
+                throw new Error(`HTTP error! status: ${fileResponse.status}`);
             }
 
             const contentLength = fileResponse.headers.get('content-length');
@@ -376,8 +377,20 @@ function Folder({ params }: { params: Promise<{ folderId: string }> }) {
                                                             animate={{ opacity: 1, x: 0 }}
                                                             transition={{ duration: 0.3 }}
                                                             className="hover:bg-muted/50 transition-colors group bg-primary/5"
+                                                            style={{ position: 'relative' }}
                                                         >
-                                                            <td className="px-6 py-4">
+                                                            <td className="px-6 py-4" style={{ position: 'relative' }}>
+                                                                {/* Barra de progresso na parte inferior da linha - Upload */}
+                                                                <div className="absolute bottom-0 left-0 right-0 pointer-events-none" style={{ height: '4px' }}>
+                                                                    <div className="w-full h-full bg-muted/30 overflow-hidden">
+                                                                        <motion.div 
+                                                                            className="h-full bg-gradient-to-r from-green-500 to-green-400 shadow-lg shadow-green-500/50"
+                                                                            initial={{ width: 0 }}
+                                                                            animate={{ width: `${uploadingFile.progress}%` }}
+                                                                            transition={{ duration: 0.3, ease: "easeOut" }}
+                                                                        />
+                                                                    </div>
+                                                                </div>
                                                                 <div className="flex items-center gap-4">
                                                                     <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl group-hover:scale-110 transition-transform duration-300 animate-pulse">
                                                                         📤
@@ -406,11 +419,10 @@ function Folder({ params }: { params: Promise<{ folderId: string }> }) {
                                                                 -
                                                             </td>
                                                             <td className="px-6 py-4">
-                                                                <div className="w-full bg-muted rounded-full h-1 overflow-hidden">
-                                                                    <div 
-                                                                        className="bg-primary h-full transition-all duration-300"
-                                                                        style={{ width: `${uploadingFile.progress}%` }}
-                                                                    />
+                                                                <div className="flex items-center justify-end gap-2">
+                                                                    <span className="text-xs text-muted-foreground font-medium">
+                                                                        {uploadingFile.progress}%
+                                                                    </span>
                                                                 </div>
                                                             </td>
                                                         </motion.tr>
@@ -424,15 +436,29 @@ function Folder({ params }: { params: Promise<{ folderId: string }> }) {
                                                                 animate={{ opacity: 1, x: 0 }}
                                                                 transition={{ duration: 0.3, delay: index * 0.05 }}
                                                                 className="hover:bg-muted/50 transition-colors group"
+                                                                style={{ position: 'relative' }}
                                                             >
-                                                                <td className="px-6 py-4">
+                                                                <td className="px-6 py-4" style={{ position: 'relative' }}>
+                                                                    {/* Barra de progresso na parte inferior da linha - Download */}
+                                                                    {downloadingFileId === file.id && (
+                                                                        <div className="absolute bottom-0 left-0 pointer-events-none" style={{ height: '4px', width: '100vw' }}>
+                                                                            <div className="w-full h-full bg-muted/30 overflow-hidden">
+                                                                                <motion.div 
+                                                                                    className="h-full bg-gradient-to-r from-primary to-primary/70 shadow-lg shadow-primary/50"
+                                                                                    initial={{ width: 0 }}
+                                                                                    animate={{ width: `${downloadProgress}%` }}
+                                                                                    transition={{ duration: 0.3, ease: "easeOut" }}
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
                                                                     <div className="flex items-center gap-4">
                                                                         <div className={`w-12 h-12 ${fileIcon.color} rounded-xl flex items-center justify-center flex-shrink-0 text-2xl group-hover:scale-110 transition-transform duration-300`}>
                                                                             {fileIcon.icon}
                                                                         </div>
                                                                         <div className="min-w-0">
                                                                             <div className="font-medium text-foreground truncate">
-                                                                                {file.originalName}
+                                                                                {file.name}
                                                                             </div>
                                                                             {file.description && (
                                                                                 <div className="text-sm text-muted-foreground truncate">
