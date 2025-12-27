@@ -3,9 +3,7 @@ version: '3.8'
 services:
   cloud_postgres:
     container_name: cloud_postgres
-    image: postgres:16-alpine
-    ports:
-      - "5433:5432"  # Mudei para 5433 para evitar conflitos
+    image: docker.io/library/postgres:16-alpine
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-cloud_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-cloud_password}
@@ -23,12 +21,7 @@ services:
 
   cloud_backend:
     container_name: cloud_backend
-    image: ${DOCKER_USER}/cloud-backend:latest
-    build:
-      context: ./cloud-core
-      dockerfile: Dockerfile
-    ports:
-      - "4002:4002"
+    image: docker.io/${DOCKER_USER}/cloud-backend:latest
     environment:
       - NODE_ENV=production
       - PORT=4002
@@ -48,25 +41,34 @@ services:
     networks:
       - cloud_network
       - proxy_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cloud-backend.rule=Host(`api.cloud.tehkly.com`)"
+      - "traefik.http.routers.cloud-backend.entrypoints=websecure"
+      - "traefik.http.routers.cloud-backend.tls.certresolver=le"
+      - "traefik.http.services.cloud-backend.loadbalancer.server.port=4002"
+      - "traefik.http.routers.cloud-backend.middlewares=backend-headers"
 
   cloud_frontend:
     container_name: cloud_frontend
-    image: ${DOCKER_USER}/cloud-frontend:latest
-    build:
-      context: ./cloud-frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3002:3002"
+    image: docker.io/${DOCKER_USER}/cloud-frontend:latest
     environment:
       - NODE_ENV=production
       - PORT=3002
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:4002}
+      - NEXT_PUBLIC_API_URL=https://api.cloud.tehkly.com
     depends_on:
       - cloud_backend
     restart: always
     networks:
       - cloud_network
       - proxy_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cloud-frontend.rule=Host(`cloud.tehkly.com`)"
+      - "traefik.http.routers.cloud-frontend.entrypoints=websecure"
+      - "traefik.http.routers.cloud-frontend.tls.certresolver=le"
+      - "traefik.http.services.cloud-frontend.loadbalancer.server.port=3002"
+      - "traefik.http.routers.cloud-frontend.middlewares=frontend-headers"
 
 volumes:
   cloud_postgres_data:
@@ -79,3 +81,4 @@ networks:
     driver: bridge
   proxy_network:
     external: true
+    name: tehkly_proxy_network
